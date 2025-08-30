@@ -7,7 +7,7 @@ function map(value, start1, stop1, start2, stop2) {
 
 // Utility: HSL to RGB
 function hslToRgb(h, s, l) {
-    h = h / 360; s = s / 100; l = l / 100;
+    h /= 360; s /= 100; l /= 100;
     let r, g, b;
     if (s === 0) {
         r = g = b = l;
@@ -29,21 +29,22 @@ function hslToRgb(h, s, l) {
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), 255];
 }
 
-// Color function
+// Color function with smoother mapping
 function getColor(n, max, scheme) {
-    if (n === max) return [0, 0, 0, 255]; // inside set = black
+    if (n >= max) return [0, 0, 0, 255]; // inside set = black
+    const t = Math.sqrt(n / max); // sqrt normalization for more contrast
     switch (scheme) {
         case "grayscale":
-            const gray = Math.floor(map(n, 0, max, 0, 255));
+            const gray = Math.floor(t * 255);
             return [gray, gray, gray, 255];
         case "rainbow":
-            const hueR = map(n, 0, max, 0, 360);
+            const hueR = map(t, 0, 1, 0, 360);
             return hslToRgb(hueR, 100, 50);
         case "fire":
-            return [map(n, 0, max, 0, 255), map(n, 0, max, 0, 150), 0, 255];
-        default: // hsl
-            const hue = map(n, 0, max, 0, 360);
-            const light = map(n, 0, max, 10, 80);
+            return [Math.floor(map(t, 0, 1, 0, 255)), Math.floor(map(t, 0, 1, 0, 150)), 0, 255];
+        default: // HSL
+            const hue = map(t, 0, 1, 0, 360);
+            const light = map(t, 0, 1, 20, 70);
             return hslToRgb(hue, 100, light);
     }
 }
@@ -59,14 +60,14 @@ function iterate(z, c, power) {
     };
 }
 
-// Main generator
+// Main generator with smooth coloring
 function generateFractal({
     width = 800,
     height = 600,
     maxIterations = 500,
     power = 2,
-    c = { real: 0.355, imag: 0.355 },
-    scale = 1,
+    c = { real: 0.285, imag: 0.01 },
+    scale = 1.5,
     offsetX = 0,
     offsetY = 0,
     colorScheme = "rainbow"
@@ -90,7 +91,13 @@ function generateFractal({
                 n++;
             }
 
-            const color = getColor(n, maxIterations, colorScheme);
+            // Smooth iteration count
+            let mu = n;
+            if (n < maxIterations) {
+                mu = n + 1 - Math.log(Math.log(Math.sqrt(z.real * z.real + z.imag * z.imag))) / Math.log(power);
+            }
+
+            const color = getColor(mu, maxIterations, colorScheme);
             const idx = (y * width + x) * 4;
             data[idx] = color[0];
             data[idx + 1] = color[1];
