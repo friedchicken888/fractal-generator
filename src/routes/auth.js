@@ -1,12 +1,11 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const users = require('./users');
+const users = require('../users');
 
 const router = express.Router();
 
-// In a real application, this secret should be stored in an environment variable
-const JWT_SECRET = 'your_jwt_secret';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 router.post('/login', (req, res) => {
     const { username, password } = req.body;

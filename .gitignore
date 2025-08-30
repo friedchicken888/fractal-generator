@@ -3,3 +3,12 @@ node_modules/
 
 # Ignore all test images
 *.png
+
+# Fractal images
+fractals/
+
+# Database file
+fractal.db
+
+# Environment variables
+.env

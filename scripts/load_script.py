@@ -14,9 +14,6 @@ PASSWORD = "user"
 # Color schemes
 COLOUR_SCHEMES = ["rainbow", "grayscale", "fire", "hsl"]
 
-# Duration to run the test (seconds)
-DURATION = 20 * 60
-
 def login():
     """Logs in to the API and returns the JWT token."""
     print(f"Logging in as {USERNAME}...")
@@ -33,13 +30,14 @@ def login():
         print(f"Login request failed: {e}")
         return None
 
-def run_load_test(token):
+def run_load_test(token, duration_seconds):
     """Runs the load test for a given duration."""
     headers = {"Authorization": f"Bearer {token}"}
     start_time = time.time()
     request_count = 0
 
-    while time.time() - start_time < DURATION:
+    loop_condition = True
+    while loop_condition:
         # Random Julia parameters
         params = {
             "width": 1920,
@@ -73,8 +71,13 @@ def run_load_test(token):
         except requests.exceptions.RequestException as e:
             req_time = time.time() - req_start
             print(f"Request {request_count} failed after {req_time:.2f}s: {e}")
+        
+        if duration_seconds is not None:
+            if time.time() - start_time >= duration_seconds:
+                loop_condition = False
 
-    print(f"\nSent {request_count} requests in {DURATION/60:.1f} minutes.")
+    total_duration_minutes = (time.time() - start_time) / 60
+    print(f"\nSent {request_count} requests in {total_duration_minutes:.1f} minutes.")
 
 if __name__ == "__main__":
     ip_address = input("Enter the server IP address: ")
@@ -82,6 +85,14 @@ if __name__ == "__main__":
     LOGIN_URL = f"{BASE_URL}/api/auth/login"
     FRACTAL_URL = f"{BASE_URL}/fractal"
 
+    duration_input = input("Enter the duration in minutes (leave empty for indefinite): ")
+    duration_seconds = None
+    if duration_input:
+        try:
+            duration_seconds = int(duration_input) * 60
+        except ValueError:
+            print("Invalid duration. Running indefinitely.")
+
     jwt_token = login()
     if jwt_token:
-        run_load_test(jwt_token)
+        run_load_test(jwt_token, duration_seconds)
