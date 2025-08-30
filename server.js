@@ -5,10 +5,12 @@ const app = express();
 const port = 3000;
 
 // Debug flag
-const DEBUG = false; // <-- set to false to disable logs
+const DEBUG = false; // Set to true to see console logs
 
+// Track if a fractal is currently being generated
 let isGenerating = false;
 
+// Debug logging function
 function debugLog(...args) {
     if (DEBUG) console.log(...args);
 }
@@ -30,18 +32,21 @@ app.get('/fractal', async (req, res) => {
         scale: parseFloat(req.query.scale) || 1,
         offsetX: parseFloat(req.query.offsetX) || 0,
         offsetY: parseFloat(req.query.offsetY) || 0,
-        colorScheme: req.query.color || 'rainbow'
+        colorScheme: req.query.color || 'rainbow',
+        debugLog // pass the debug callback to fractal.js
     };
 
     isGenerating = true;
     let buffer;
+
     try {
-        buffer = await generateFractal(options, debugLog);
+        buffer = await generateFractal(options);
     } catch (err) {
         isGenerating = false;
         console.error(err);
         return res.status(500).send('Fractal generation failed');
     }
+
     isGenerating = false;
 
     if (!buffer) {
@@ -53,5 +58,5 @@ app.get('/fractal', async (req, res) => {
 });
 
 app.listen(port, () => {
-    debugLog(`Fractal API running`);
+    debugLog(`Fractal API running on port ${port}`);
 });
