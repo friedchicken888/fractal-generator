@@ -42,7 +42,7 @@ def run_load_test(token, duration_seconds):
         params = {
             "width": 1920,
             "height": 1080,
-            "iterations": random.randint(100, 3000),
+            "maxIterations": random.randint(100, 3000),
             "power": 2,
             "scale": round(random.uniform(0.3, 1.5), 3),
             "offsetX": round(random.uniform(-1.5, 1.5), 3),
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     ip_address = input("Enter the server IP address: ")
     BASE_URL = f"http://{ip_address}:3000"
     LOGIN_URL = f"{BASE_URL}/api/auth/login"
-    FRACTAL_URL = f"{BASE_URL}/fractal"
+    FRACTAL_URL = f"{BASE_URL}/api/fractal"
 
     duration_input = input("Enter the duration in minutes (leave empty for indefinite): ")
     duration_seconds = None
