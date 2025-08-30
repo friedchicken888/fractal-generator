@@ -2,7 +2,7 @@ import requests
 import time
 import random
 
-URL = "http://3.104.30.61:3000/fractal"
+URL = "http://:3000/fractal"
 
 COLOUR_SCHEMES = ["rainbow", "grayscale", "fire", "hsl"]
 
