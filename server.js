@@ -1,8 +1,13 @@
 const express = require('express');
 const { generateFractal } = require('./fractal');
 const fs = require('fs');
+const { router: authRouter, verifyToken } = require('./auth');
+
 const app = express();
 const port = 3000;
+
+// Middleware
+app.use(express.json());
 
 // Debug flag
 const DEBUG = false; // Set to true to see console logs
@@ -15,7 +20,10 @@ function debugLog(...args) {
     if (DEBUG) console.log(...args);
 }
 
-app.get('/fractal', async (req, res) => {
+// Routes
+app.use('/api/auth', authRouter);
+
+app.get('/fractal', verifyToken, async (req, res) => {
     if (isGenerating) {
         return res.status(429).send('Another fractal is currently generating. Try again later.');
     }
