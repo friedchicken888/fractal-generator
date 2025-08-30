@@ -37,21 +37,30 @@ app.get('/fractal', async (req, res) => {
     };
 
     isGenerating = true;
-    let buffer;
 
+    // Print the options if debugging
+    if (DEBUG) {
+        debugLog('Starting fractal generation with options:', options);
+    }
+
+    let buffer;
     try {
         buffer = await generateFractal(options);
     } catch (err) {
         isGenerating = false;
         console.error(err);
+        if (DEBUG) console.log(); // new line after error
         return res.status(500).send('Fractal generation failed');
     }
 
     isGenerating = false;
 
     if (!buffer) {
+        if (DEBUG) console.log('Fractal generation aborted due to time limit.\n'); // new line
         return res.status(499).send('Fractal generation aborted due to time limit.');
     }
+
+    if (DEBUG) console.log('Fractal generation finished successfully.\n'); // new line
 
     res.setHeader('Content-Type', 'image/png');
     res.send(buffer);
