@@ -62,7 +62,18 @@ def run_load_test(token, duration_seconds):
             req_time = time.time() - req_start
 
             if resp.status_code == 200:
-                print(f"Request {request_count} done in {req_time:.2f}s, size={len(resp.content)} bytes")
+                try:
+                    data = resp.json()
+                    fractal_url = data.get('url')
+                    fractal_hash = data.get('hash')
+                    if fractal_url:
+                        print(f"Request {request_count} done in {req_time:.2f}s. Fractal URL: {fractal_url}")
+                    elif fractal_hash:
+                        print(f"Request {request_count} done in {req_time:.2f}s. Fractal Hash: {fractal_hash}")
+                    else:
+                        print(f"Request {request_count} done in {req_time:.2f}s. Unexpected JSON response: {data}")
+                except ValueError: # Handles cases where response is not JSON
+                    print(f"Request {request_count} done in {req_time:.2f}s. Response not JSON, size={len(resp.content)} bytes")
             elif resp.status_code == 499:
                 print(f"Request {request_count} aborted (time limit exceeded) after {req_time:.2f}s")
             else:

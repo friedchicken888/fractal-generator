@@ -60,7 +60,15 @@ def generate_fractal():
     try:
         r = requests.get(f"{BASE_URL}/fractal", headers=headers, params=params, timeout=180)
         r.raise_for_status()
-        print("Fractal generated successfully!")
+        data = r.json()
+        fractal_url = data.get('url')
+        fractal_hash = data.get('hash')
+        if fractal_url:
+            print(f"Fractal generated successfully! URL: {fractal_url}")
+        elif fractal_hash:
+            print(f"Fractal generated successfully! Hash: {fractal_hash}")
+        else:
+            print(f"Fractal generated successfully! Unexpected response: {data}")
     except requests.exceptions.RequestException as e:
         print(f"Fractal generation failed: {e}")
 
@@ -120,6 +128,8 @@ def view_data(view_type="my_gallery"):
 
                 print(f"ID: {entry.get('id')}, Hash: {display_hash}{user_info}, Time: {entry.get(timestamp_field)}")
                 print(f"  Params: W:{width}, H:{height}, Iter:{iterations}, Power:{power}, C:{c_real}+{c_imag}i, Scale:{scale}, Offset:{offset_x},{offset_y}, Color:{color_scheme}")
+                if entry.get('url'):
+                    print(f"  URL: {entry.get('url')}")
         else:
             print(f"No {title.lower()} items found.")
     except requests.exceptions.RequestException as e:

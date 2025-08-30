@@ -12,7 +12,11 @@ router.get('/gallery', verifyToken, (req, res) => {
         if (err) {
             return res.status(500).send("Database error");
         }
-        res.json(rows);
+        const galleryWithUrls = rows.map(row => {
+            const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
+            return { ...row, url: fractalUrl };
+        });
+        res.json(galleryWithUrls);
     });
 });
 
@@ -83,7 +87,11 @@ router.get('/admin/history', verifyToken, (req, res) => {
         if (err) {
             return res.status(500).send("Database error");
         }
-        res.json(rows);
+        const historyWithUrls = rows.map(row => {
+            const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
+            return { ...row, url: fractalUrl };
+        });
+        res.json(historyWithUrls);
     });
 });
 
@@ -97,7 +105,11 @@ router.get('/admin/gallery', verifyToken, (req, res) => {
         if (err) {
             return res.status(500).send("Database error");
         }
-        res.json(rows);
+        const galleryWithUrls = rows.map(row => {
+            const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
+            return { ...row, url: fractalUrl };
+        });
+        res.json(galleryWithUrls);
     });
 });
 
