@@ -19,7 +19,7 @@ app.get('/fractal', (req, res) => {
         colorScheme: req.query.color || "rainbow"
     };
 
-    console.log("Generating fractal with options:", options);
+    // console.log("Generating fractal with options:", options);
 
     const buffer = generateFractal(options);
     res.setHeader('Content-Type', 'image/png');
@@ -27,5 +27,5 @@ app.get('/fractal', (req, res) => {
 });
 
 app.listen(port, () => {
-    console.log(`🚀 Fractal API running on port:${port}`);
+    console.log(`Fractal API running`);
 });
