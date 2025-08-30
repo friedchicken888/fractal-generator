@@ -3,15 +3,12 @@ const { generateFractal } = require('./fractal');
 const app = express();
 const port = 3000;
 
-// Global state for cancellation
+// Global state
 let cancelFlag = false;
 let isGenerating = false;
 
-// Endpoint to generate a fractal
 app.get('/fractal', async (req, res) => {
-    if (isGenerating) {
-        return res.status(429).send('Another fractal is currently generating. Try again later.');
-    }
+    if (isGenerating) return res.status(429).send('Another fractal is currently generating.');
 
     const options = {
         width: parseInt(req.query.width) || 1920,
@@ -25,20 +22,14 @@ app.get('/fractal', async (req, res) => {
         scale: parseFloat(req.query.scale) || 1,
         offsetX: parseFloat(req.query.offsetX) || 0,
         offsetY: parseFloat(req.query.offsetY) || 0,
-        colorScheme: req.query.color || 'rainbow',
-        cancelCallback: () => cancelFlag // <-- pass cancel callback to fractal
+        colorScheme: req.query.color || 'rainbow'
     };
 
-    // console.log('Starting fractal generation with options:', options);
     cancelFlag = false;
     isGenerating = true;
 
     try {
-        // Wrap synchronous fractal generation in a Promise for async handling
-        const buffer = await new Promise((resolve) => {
-            resolve(generateFractal(options));
-        });
-
+        const buffer = await generateFractal({ ...options, cancelCallback: () => cancelFlag });
         isGenerating = false;
 
         if (buffer) {
@@ -54,17 +45,16 @@ app.get('/fractal', async (req, res) => {
     }
 });
 
-// Endpoint to cancel the current generation
 app.get('/cancel', (req, res) => {
     if (!isGenerating) {
+        console.log('Cancel request received, but no fractal is generating.');
         return res.send('No fractal is currently generating.');
     }
     cancelFlag = true;
-    // console.log('Fractal generation cancelled by user.');
+    console.log('Cancel request received. Fractal generation will stop shortly.');
     res.send('Cancel request received. The current fractal will stop shortly.');
 });
 
-// Start the server
 app.listen(port, () => {
-    console.log(`Fractal API running`);
+    console.log(`Fractal API running on port ${port}`);
 });

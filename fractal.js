@@ -5,13 +5,12 @@ function map(value, start1, stop1, start2, stop2) {
     return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
 }
 
-// Utility: HSL to RGB
+// HSL to RGB
 function hslToRgb(h, s, l) {
     h /= 360; s /= 100; l /= 100;
     let r, g, b;
-    if (s === 0) {
-        r = g = b = l;
-    } else {
+    if (s === 0) r = g = b = l;
+    else {
         const hue2rgb = (p, q, t) => {
             if (t < 0) t += 1;
             if (t > 1) t -= 1;
@@ -29,27 +28,27 @@ function hslToRgb(h, s, l) {
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), 255];
 }
 
-// Color function with smoother mapping
+// Color with smoother mapping
 function getColor(n, max, scheme) {
-    if (n >= max) return [0, 0, 0, 255]; // inside set = black
-    const t = Math.sqrt(n / max); // sqrt normalization for better contrast
+    if (n >= max) return [0, 0, 0, 255];
+    const t = Math.sqrt(n / max);
     switch (scheme) {
-        case "grayscale":
+        case 'grayscale':
             const gray = Math.floor(t * 255);
             return [gray, gray, gray, 255];
-        case "rainbow":
+        case 'rainbow':
             const hueR = map(t, 0, 1, 0, 360);
             return hslToRgb(hueR, 100, 50);
-        case "fire":
+        case 'fire':
             return [Math.floor(map(t, 0, 1, 0, 255)), Math.floor(map(t, 0, 1, 0, 150)), 0, 255];
-        default: // HSL
+        default:
             const hue = map(t, 0, 1, 0, 360);
             const light = map(t, 0, 1, 20, 70);
             return hslToRgb(hue, 100, light);
     }
 }
 
-// Iteration function: z -> z^p + c
+// Iteration function
 function iterate(z, c, power) {
     const r = Math.sqrt(z.real * z.real + z.imag * z.imag);
     const theta = Math.atan2(z.imag, z.real);
@@ -60,7 +59,7 @@ function iterate(z, c, power) {
     };
 }
 
-// Main generator with smooth coloring and cancel callback
+// Main generator with cancel callback
 function generateFractal({
     width = 800,
     height = 600,
@@ -70,17 +69,24 @@ function generateFractal({
     scale = 1.5,
     offsetX = 0,
     offsetY = 0,
-    colorScheme = "rainbow",
+    colorScheme = 'rainbow',
     cancelCallback = null
 }) {
+    console.log(`Starting fractal generation: ${width}x${height}, maxIter=${maxIterations}, c=${c.real}+${c.imag}i`);
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     const imageData = ctx.createImageData(width, height);
     const data = imageData.data;
 
     for (let x = 0; x < width; x++) {
-        for (let y = 0; y < height; y++) {
+        if (cancelCallback && cancelCallback()) {
+            console.log(`Fractal generation cancelled at x=${x}`);
+            return null;
+        }
 
+        if (x % 100 === 0) console.log(`Progress: x=${x}/${width}`);
+
+        for (let y = 0; y < height; y++) {
             let z = {
                 real: map(x, 0, width, -scale + offsetX, scale + offsetX),
                 imag: map(y, 0, height, -scale + offsetY, scale + offsetY)
@@ -88,18 +94,12 @@ function generateFractal({
 
             let n = 0;
             while (n < maxIterations) {
-                // Cancel check inside iteration loop
-                if (cancelCallback && cancelCallback()) {
-                    console.log('Fractal generation cancelled!');
-                    return null;
-                }
-
                 z = iterate(z, c, power);
                 if ((z.real * z.real + z.imag * z.imag) > 4) break;
                 n++;
             }
 
-            // Smooth iteration count
+            // Smooth coloring
             let mu = n;
             if (n < maxIterations) {
                 mu = n + 1 - Math.log(Math.log(Math.sqrt(z.real * z.real + z.imag * z.imag))) / Math.log(power);
@@ -115,6 +115,7 @@ function generateFractal({
     }
 
     ctx.putImageData(imageData, 0, 0);
+    console.log('Fractal generation finished.');
     return canvas.toBuffer('image/png');
 }
 
