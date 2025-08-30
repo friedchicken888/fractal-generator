@@ -60,7 +60,7 @@ function iterate(z, c, power) {
     };
 }
 
-// Main generator with smooth coloring
+// Main generator with smooth coloring and optional cancel callback
 function generateFractal({
     width = 800,
     height = 600,
@@ -70,7 +70,8 @@ function generateFractal({
     scale = 1.5,
     offsetX = 0,
     offsetY = 0,
-    colorScheme = "rainbow"
+    colorScheme = "rainbow",
+    cancelCallback = null // <-- new parameter
 }) {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
@@ -79,6 +80,12 @@ function generateFractal({
 
     for (let x = 0; x < width; x++) {
         for (let y = 0; y < height; y++) {
+
+            if (cancelCallback && cancelCallback()) {
+                console.log('Fractal generation cancelled!');
+                return null;
+            }
+
             let z = {
                 real: map(x, 0, width, -scale + offsetX, scale + offsetX),
                 imag: map(y, 0, height, -scale + offsetY, scale + offsetY)
