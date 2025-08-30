@@ -11,6 +11,9 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 
+// Serve static fractal images
+app.use('/fractals', express.static('fractals'));
+
 // Create fractals directory if it doesn't exist
 const fractalsDir = './fractals';
 if (!fs.existsSync(fractalsDir)){

@@ -52,8 +52,8 @@ router.get('/fractal', verifyToken, async (req, res) => {
                     console.error("Failed to add to gallery", err);
                 }
             });
-            res.setHeader('Content-Type', 'image/png');
-            return res.sendFile(process.cwd() + '/' + row.image_path);
+            const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
+            return res.json({ hash: row.hash, url: fractalUrl });
         } else {
             // Fractal does not exist, generate it
             isGenerating = true;
@@ -93,8 +93,8 @@ router.get('/fractal', verifyToken, async (req, res) => {
                     }
                 });
 
-                res.setHeader('Content-Type', 'image/png');
-                res.send(buffer);
+                const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${hash}.png`;
+                res.json({ hash, url: fractalUrl });
             });
         }
     });
