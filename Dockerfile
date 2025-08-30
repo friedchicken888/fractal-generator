@@ -14,7 +14,7 @@ RUN apt-get update && \
     libjpeg-dev \
     libgif-dev \
     librsvg2-dev && \
-    npm install --only=production
+    npm install
 
 COPY . .
 
