@@ -7,9 +7,7 @@ WORKDIR /app
 # Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install application dependencies
-# Use --only=production to avoid installing devDependencies like nodemon in the final image
-RUN npm install --only=production
+RUN apk add --no-cache     build-base     python3     g++     pkgconfig     cairo-dev     pango-dev     jpeg-dev     giflib-dev     librsvg-dev &&     npm install --only=production
 
 # Copy the rest of the application source code to the working directory
 COPY . .
