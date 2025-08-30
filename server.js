@@ -1,14 +1,22 @@
 const express = require('express');
 const { generateFractal } = require('./fractal');
+const fs = require('fs');
 const app = express();
 const port = 3000;
 
-// Global state
-let cancelFlag = false;
+// Debug flag
+const DEBUG = false; // <-- set to false to disable logs
+
 let isGenerating = false;
 
+function debugLog(...args) {
+    if (DEBUG) console.log(...args);
+}
+
 app.get('/fractal', async (req, res) => {
-    if (isGenerating) return res.status(429).send('Another fractal is currently generating.');
+    if (isGenerating) {
+        return res.status(429).send('Another fractal is currently generating. Try again later.');
+    }
 
     const options = {
         width: parseInt(req.query.width) || 1920,
@@ -25,36 +33,25 @@ app.get('/fractal', async (req, res) => {
         colorScheme: req.query.color || 'rainbow'
     };
 
-    cancelFlag = false;
     isGenerating = true;
-
+    let buffer;
     try {
-        const buffer = await generateFractal({ ...options, cancelCallback: () => cancelFlag });
-        isGenerating = false;
-
-        if (buffer) {
-            res.setHeader('Content-Type', 'image/png');
-            res.send(buffer);
-        } else {
-            res.status(499).send('Fractal generation cancelled');
-        }
+        buffer = await generateFractal(options, debugLog);
     } catch (err) {
         isGenerating = false;
-        console.error('Error generating fractal:', err);
-        res.status(500).send('Fractal generation failed');
+        console.error(err);
+        return res.status(500).send('Fractal generation failed');
     }
-});
+    isGenerating = false;
 
-app.get('/cancel', (req, res) => {
-    if (!isGenerating) {
-        console.log('Cancel request received, but no fractal is generating.');
-        return res.send('No fractal is currently generating.');
+    if (!buffer) {
+        return res.status(499).send('Fractal generation aborted due to time limit.');
     }
-    cancelFlag = true;
-    console.log('Cancel request received. Fractal generation will stop shortly.');
-    res.send('Cancel request received. The current fractal will stop shortly.');
+
+    res.setHeader('Content-Type', 'image/png');
+    res.send(buffer);
 });
 
 app.listen(port, () => {
-    console.log(`Fractal API running on port ${port}`);
+    debugLog(`Fractal API running`);
 });
