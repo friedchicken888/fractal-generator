@@ -1,5 +1,5 @@
 const db = require('../database.js');
-const users = require('../users.js'); // For mapping user_id to username in getGalleryForUser
+const users = require('../users.js');
 
 exports.getHistoryForUser = (userId, callback) => {
     const sql = `
@@ -78,7 +78,6 @@ exports.getAllHistory = (filters, sortBy, sortOrder, limit, offset, callback) =>
         `;
         db.all(dataSql, [...params, limit, offset], (err, rows) => {
             if (err) return callback(err);
-            // Manually map user_id to username
             const historyWithUsernames = rows.map(row => {
                 const user = users.find(u => u.id === row.user_id);
                 return { ...row, username: user ? user.username : 'Unknown' };

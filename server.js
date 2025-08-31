@@ -1,3 +1,9 @@
+/**
+ * @file server.js
+ * @description Main entry point for the Fractal Generator Express API.
+ * Initializes the Express application, configures middleware,
+ * sets up routes, and starts the server.
+ */
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
@@ -8,19 +14,14 @@ const historyRouter = require('./src/routes/history');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
 app.use(express.json());
-
-// Serve static fractal images
 app.use('/fractals', express.static('fractals'));
 
-// Create fractals directory if it doesn't exist
 const fractalsDir = './fractals';
 if (!fs.existsSync(fractalsDir)){
     fs.mkdirSync(fractalsDir);
 }
 
-// Routes
 app.use('/api/auth', authRouter);
 app.use('/api', fractalRouter);
 app.use('/api', historyRouter);

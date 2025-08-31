@@ -4,7 +4,6 @@ const DBSOURCE = "fractal.db";
 
 const db = new sqlite3.Database(DBSOURCE, (err) => {
     if (err) {
-        // Cannot open database
         console.error(err.message);
         throw err;
     } else {
@@ -49,7 +48,6 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
 
         db.run(fractalsTable, (err) => {
             if (err) {
-                // Table already created
             } else {
                 console.log("Fractals table created");
             }
@@ -57,7 +55,6 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
 
         db.run(historyTable, (err) => {
             if (err) {
-                // Table already created
             } else {
                 console.log("History table created");
             }
@@ -65,7 +62,6 @@ const db = new sqlite3.Database(DBSOURCE, (err) => {
 
         db.run(galleryTable, (err) => {
             if (err) {
-                // Table already created
             } else {
                 console.log("Gallery table created");
             }

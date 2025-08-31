@@ -1,17 +1,16 @@
 const bcrypt = require('bcryptjs');
 
-// Hardcoded users with hashed passwords
 const users = [
     {
         id: 1,
         username: 'user',
-        password: bcrypt.hashSync('user', 8), // hashed
+        password: bcrypt.hashSync('user', 8),
         role: 'user'
     },
     {
         id: 2,
         username: 'user2',
-        password: bcrypt.hashSync('user2', 8), // hashed
+        password: bcrypt.hashSync('user2', 8),
         role: 'user'
     },
     {

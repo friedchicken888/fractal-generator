@@ -1,7 +1,6 @@
 const fs = require('fs');
 const { generateFractal } = require('./fractal');
 
-// Options for testing
 const options = {
     width: 1920,
     height: 1080,
@@ -18,7 +17,6 @@ console.log('Starting fractal generation with options:', options);
 
 const startTime = Date.now();
 
-// Generate the fractal
 const buffer = generateFractal(options);
 
 const endTime = Date.now();

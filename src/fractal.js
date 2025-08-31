@@ -1,11 +1,11 @@
 const { createCanvas } = require('canvas');
 
-// Utility: map value ranges
+// Map value ranges
 function map(value, start1, stop1, start2, stop2) {
     return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
 }
 
-// Utility: HSL to RGB
+// HSL to RGB
 function hslToRgb(h, s, l) {
     h /= 360; s /= 100; l /= 100;
     let r, g, b;
@@ -32,7 +32,7 @@ function hslToRgb(h, s, l) {
 // Color function with smoother mapping
 function getColor(n, max, scheme) {
     if (n >= max) return [0, 0, 0, 255]; // inside set = black
-    const t = Math.sqrt(n / max); // sqrt normalization for more contrast
+    const t = Math.sqrt(n / max);
     switch (scheme) {
         case "grayscale":
             const gray = Math.floor(t * 255);

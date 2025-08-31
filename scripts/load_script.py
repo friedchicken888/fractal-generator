@@ -2,7 +2,6 @@ import requests
 import time
 import random
 
-# Fractal API URL
 BASE_URL = ""
 LOGIN_URL = ""
 FRACTAL_URL = ""
@@ -13,7 +12,6 @@ USERS = {
     "admin": {"username": "admin", "password": "admin"}
 }
 
-# Color schemes
 COLOUR_SCHEMES = ["rainbow", "grayscale", "fire", "hsl"]
 
 def login(username, password):
@@ -39,19 +37,17 @@ def run_load_test(duration_seconds):
 
     loop_condition = True
     while loop_condition:
-        # Randomly select a user for each request
         selected_user_key = random.choice(list(USERS.keys()))
         selected_user = USERS[selected_user_key]
         jwt_token = login(selected_user["username"], selected_user["password"])
 
         if not jwt_token:
             print(f"Skipping request {request_count + 1} due to login failure.")
-            time.sleep(1) # Wait a bit before retrying
+            time.sleep(1)
             continue
 
         headers = {"Authorization": f"Bearer {jwt_token}"}
 
-        # Random Julia parameters
         params = {
             "width": 1920,
             "height": 1080,
@@ -70,7 +66,6 @@ def run_load_test(duration_seconds):
 
         req_start = time.time()
         try:
-            # Set a generous timeout in case the server takes a long time
             resp = requests.get(FRACTAL_URL, params=params, headers=headers, timeout=180)
             req_time = time.time() - req_start
 
@@ -85,7 +80,7 @@ def run_load_test(duration_seconds):
                         print(f"Request {request_count} done in {req_time:.2f}s. Fractal Hash: {fractal_hash}\n")
                     else:
                         print(f"Request {request_count} done in {req_time:.2f}s. Unexpected JSON response: {data}\n")
-                except ValueError: # Handles cases where response is not JSON
+                except ValueError:
                     print(f"Request {request_count} done in {req_time:.2f}s. Response not JSON, size={len(resp.content)} \n")
             elif resp.status_code == 499:
                 print(f"Request {request_count} aborted (time limit exceeded) after {req_time:.2f}s\n")
