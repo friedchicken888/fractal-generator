@@ -10,6 +10,12 @@ const users = [
     },
     {
         id: 2,
+        username: 'user2',
+        password: bcrypt.hashSync('user2', 8), // hashed
+        role: 'user'
+    },
+    {
+        id: 3,
         username: 'admin',
         password: bcrypt.hashSync('admin', 8),
         role: 'admin'

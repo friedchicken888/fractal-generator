@@ -1,3 +1,4 @@
+import os
 import requests
 import json
 
@@ -17,7 +18,7 @@ def login(username, password):
         r.raise_for_status()
         data = r.json()
         current_token = data['token']
-        current_user_role = username # Assuming username is also the role for simplicity
+        current_user_role = username
         print(f"Logged in as {username}.")
         return True
     except requests.exceptions.RequestException as e:
@@ -64,15 +65,15 @@ def generate_fractal():
         fractal_url = data.get('url')
         fractal_hash = data.get('hash')
         if fractal_url:
-            print(f"Fractal generated successfully! URL: {fractal_url}")
+            print(f"\nFractal generated successfully! URL: {fractal_url}")
         elif fractal_hash:
-            print(f"Fractal generated successfully! Hash: {fractal_hash}")
+            print(f"\nFractal generated successfully! Hash: {fractal_hash}")
         else:
-            print(f"Fractal generated successfully! Unexpected response: {data}")
+            print(f"\nFractal generated successfully! Unexpected response: {data}")
     except requests.exceptions.RequestException as e:
-        print(f"Fractal generation failed: {e}")
+        print(f"\nFractal generation failed: {e}")
 
-def view_data(view_type="my_gallery"):
+def view_data(view_type="my_gallery", limit=None, offset=None, filters=None, sortBy=None, sortOrder=None, prompt_for_filters=True):
     if not current_token:
         print("Please log in first.")
         return
@@ -99,13 +100,48 @@ def view_data(view_type="my_gallery"):
         print("Invalid view type.")
         return
 
+    # Collect pagination, filter, and sort parameters
+    query_params = {}
+    if limit is not None: query_params["limit"] = int(limit)
+    if offset is not None: query_params["offset"] = int(offset)
+
+    if prompt_for_filters: # Use the new flag to control prompting
+        print("\n--- Filters (leave blank to skip) ---")
+        colorScheme = input("Color Scheme: ")
+        power = input("Power: ")
+        iterations = input("Max Iterations: ")
+        width = input("Width: ")
+        height = input("Height: ")
+        
+        filters = {} # Re-initialize filters if prompting
+        if colorScheme: filters["colorScheme"] = colorScheme
+        if power: filters["power"] = float(power)
+        if iterations: filters["iterations"] = int(iterations)
+        if width: filters["width"] = int(width)
+        if height: filters["height"] = int(height)
+
+    for k, v in filters.items():
+        query_params[k] = v
+
+    if sortBy is None: sortBy = input("Sort By (e.g., added_at, hash, width - leave blank for default): ")
+    if sortOrder is None: sortOrder = input("Sort Order (ASC/DESC - leave blank for default): ")
+    if sortBy: query_params["sortBy"] = sortBy
+    if sortOrder: query_params["sortOrder"] = sortOrder
+
+    clear_terminal()
+
     headers = {"Authorization": f"Bearer {current_token}"}
     try:
-        r = requests.get(f"{BASE_URL}{endpoint}", headers=headers)
+        r = requests.get(f"{BASE_URL}{endpoint}", headers=headers, params=query_params)
         r.raise_for_status()
-        data = r.json()
+        response_data = r.json()
+        data = response_data.get('data', [])
+        total_count = response_data.get('totalCount', len(data))
+        current_limit = response_data.get('limit', len(data))
+        current_offset = response_data.get('offset', 0)
+
         if data:
-            print(f"\n--- {title} ---")
+            print(f"\n--- {title} (Total: {total_count}, Showing {current_offset}-{current_offset + len(data)} of {total_count}) ---")
             for entry in data:
                 # Determine if it's a gallery or history entry to get correct timestamp field
                 timestamp_field = 'added_at' if 'added_at' in entry else 'generated_at'
@@ -129,11 +165,20 @@ def view_data(view_type="my_gallery"):
                 print(f"ID: {entry.get('id')}, Hash: {display_hash}{user_info}, Time: {entry.get(timestamp_field)}")
                 print(f"  Params: W:{width}, H:{height}, Iter:{iterations}, Power:{power}, C:{c_real}+{c_imag}i, Scale:{scale}, Offset:{offset_x},{offset_y}, Color:{color_scheme}")
                 if entry.get('url'):
-                    print(f"  URL: {entry.get('url')}")
+                    print(f"  URL: {entry.get('url')}\n")
+                
+            return {'data': data, 'totalCount': total_count, 'limit': current_limit, 'offset': current_offset, 'filters': filters, 'sortBy': sortBy, 'sortOrder': sortOrder}
         else:
-            print(f"No {title.lower()} items found.")
+            print(f"No {title.lower()} items found for the current query.")
+            return {'data': [], 'totalCount': total_count, 'limit': current_limit, 'offset': current_offset, 'filters': filters, 'sortBy': sortBy, 'sortOrder': sortOrder}
     except requests.exceptions.RequestException as e:
         print(f"Failed to retrieve {title.lower()}: {e}")
+        if e.response is not None:
+            print(f"HTTP Status Code: {e.response.status_code}")
+            print(f"Response Body: {e.response.text}")
+
+def clear_terminal():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
 def delete_gallery_entry():
     if not current_token:
@@ -159,8 +204,10 @@ def main_menu():
     if not ip_address:
         ip_address = "localhost"
     BASE_URL = f"http://{ip_address}:3000/api"
+    
 
     while True:
+        clear_terminal()
         print("\n--- Main Menu ---")
         if current_user_role:
             print(f"Logged in as: {current_user_role}")
@@ -178,44 +225,226 @@ def main_menu():
 
         print()
         choice = input("Enter your choice: ")
-
+        
         if choice == "1":
+            clear_terminal()
             print("\nSelect user:")
             print("  1. user")
-            print("  2. admin")
-            user_choice_num = input("\nEnter choice (1 or 2): ")
+            print("  2. user2")
+            print("  3. admin")
+            user_choice_num = input("\nEnter choice (1, 2 or 3): ")
             selected_user = None
             if user_choice_num == "1":
                 selected_user = "user"
             elif user_choice_num == "2":
+                selected_user = "user2"
+            elif user_choice_num == "3":
                 selected_user = "admin"
             else:
                 print("Invalid choice.")
 
             if selected_user:
                 login(USERS[selected_user]["username"], USERS[selected_user]["password"])
-            input("\nPress Enter to continue...\n\n")
+            input("\nPress Enter to continue...")
+            
         elif choice == "2":
+            clear_terminal()
             generate_fractal()
-            input("\nPress Enter to continue...\n\n")
+            input("\nPress Enter to continue...")
+            
         elif choice == "3":
-            view_data(view_type="my_gallery")
-            input("\nPress Enter to continue...\n\n")
+            current_limit = None
+            current_offset = 0
+            print("\n--- View My Gallery ---")
+            limit_input = input(f"Enter limit (leave blank for default 5, current: {current_limit if current_limit is not None else 'default'}):")
+            offset_input = input(f"Enter offset (leave blank for current {current_offset}): ")
+            
+            limit = int(limit_input) if limit_input else current_limit
+            offset = int(offset_input) if offset_input else current_offset
+
+            if limit is None: # If user didn't provide limit and it's the first run
+                limit = 5 # Use the actual default
+
+            # Initialize filters, sortBy, sortOrder outside the loop
+            filters = None
+            sortBy = None
+            sortOrder = None
+            prompt_for_filters_my_gallery = True # New flag
+
+            while True:
+                result = view_data(view_type="my_gallery", limit=limit, offset=offset, filters=filters, sortBy=sortBy, sortOrder=sortOrder, prompt_for_filters=prompt_for_filters_my_gallery)
+                
+                if result:
+                    current_limit = result['limit']
+                    current_offset = result['offset']
+                    total_count = result['totalCount']
+                    filters = result['filters'] # Capture returned filters
+                    sortBy = result['sortBy']   # Capture returned sortBy
+                    sortOrder = result['sortOrder'] # Capture returned sortOrder
+                    prompt_for_filters_my_gallery = False # Set to False after first prompt
+                    
+                    # Check if there are more items to display or if it's not the first page
+                    has_more_pages = current_offset + len(result['data']) < total_count
+                    can_go_back = current_offset > 0
+
+                    if result['data'] and (has_more_pages or can_go_back):
+                        print("\nNavigation:")
+                        if can_go_back:
+                            print("  1. Previous Page")
+                        if has_more_pages:
+                            print("  2. Next Page")
+                        print("  Any other key to exit pagination.")
+
+                        nav_choice = input("Enter your choice: ")
+
+                        if nav_choice == '1' and can_go_back:
+                            clear_terminal()
+                            offset = max(0, offset - current_limit) # Update offset for next iteration
+                            continue
+                        elif nav_choice == '2' and has_more_pages:
+                            clear_terminal()
+                            offset += current_limit # Update offset for next iteration
+                            continue
+                    # If no data, or no more pages and it's the first page, break out of the loop
+                    break
+                else:
+                    # If result is None (e.g., API error), break out of the loop
+                    break
+            input("\nPress Enter to continue...") # No  here
+        
         elif choice == "4" and current_user_role == "admin":
-            view_data(view_type="all_history")
-            input("\nPress Enter to continue...\n\n")
+            current_limit = None
+            current_offset = 0
+            print("\n--- View All History (Admin) ---")
+            limit_input = input(f"Enter limit (leave blank for default 5, current: {current_limit if current_limit is not None else 'default'}):")
+            offset_input = input(f"Enter offset (leave blank for current {current_offset}): ")
+                
+            limit = int(limit_input) if limit_input else current_limit
+            offset = int(offset_input) if offset_input else current_offset
+
+            if limit is None: # If user didn't provide limit and it's the first run
+                limit = 5 # Use the actual default
+
+            # Initialize filters, sortBy, sortOrder outside the loop
+            filters = None
+            sortBy = None
+            sortOrder = None
+            prompt_for_filters_all_history = True # New flag
+
+            while True:
+                result = view_data(view_type="all_history", limit=limit, offset=offset, filters=filters, sortBy=sortBy, sortOrder=sortOrder, prompt_for_filters=prompt_for_filters_all_history)
+                
+                if result:
+                    current_limit = result['limit']
+                    current_offset = result['offset']
+                    total_count = result['totalCount']
+                    filters = result['filters'] # Capture returned filters
+                    sortBy = result['sortBy']   # Capture returned sortBy
+                    sortOrder = result['sortOrder'] # Capture returned sortOrder
+                    prompt_for_filters_all_history = False # Set to False after first prompt
+                    
+                    # Check if there are more items to display or if it's not the first page
+                    has_more_pages = current_offset + len(result['data']) < total_count
+                    can_go_back = current_offset > 0
+
+                    if result['data'] and (has_more_pages or can_go_back):
+                        print("\nNavigation:")
+                        if can_go_back:
+                            print("  1. Previous Page")
+                        if has_more_pages:
+                            print("  2. Next Page")
+                        print("  Any other key to exit pagination.")
+
+                        nav_choice = input("Enter your choice: ")
+
+                        if nav_choice == '1' and can_go_back:
+                            clear_terminal()
+                            offset = max(0, offset - current_limit) # Update offset for next iteration
+                            
+                            continue
+                        elif nav_choice == '2' and has_more_pages:
+                            clear_terminal()
+                            offset += current_limit # Update offset for next iteration
+                            
+                            continue
+                    # If no data, or no more pages and it's the first page, break out of the loop
+                    break
+                else:
+                    # If result is None (e.g., API error), break out of the loop
+                    break
+            input("\nPress Enter to continue...")
         elif choice == "5" and current_user_role == "admin":
-            view_data(view_type="all_gallery")
-            input("\nPress Enter to continue...\n\n")
+            current_limit = None
+            current_offset = 0
+            print("\n--- View All Gallery (Admin) ---")
+            limit_input = input(f"Enter limit (leave blank for default 5, current: {current_limit if current_limit is not None else 'default'}):")
+            offset_input = input(f"Enter offset (leave blank for current {current_offset}): ")
+                
+            limit = int(limit_input) if limit_input else current_limit
+            offset = int(offset_input) if offset_input else current_offset
+
+            if limit is None: # If user didn't provide limit and it's the first run
+                limit = 5 # Use the actual default
+
+            # Initialize filters, sortBy, sortOrder outside the loop
+            filters = None
+            sortBy = None
+            sortOrder = None
+            prompt_for_filters_all_gallery = True # New flag
+
+            while True:
+                result = view_data(view_type="all_gallery", limit=limit, offset=offset, filters=filters, sortBy=sortBy, sortOrder=sortOrder, prompt_for_filters=prompt_for_filters_all_gallery)
+                
+                if result:
+                    current_limit = result['limit']
+                    current_offset = result['offset']
+                    total_count = result['totalCount']
+                    filters = result['filters'] # Capture returned filters
+                    sortBy = result['sortBy']   # Capture returned sortBy
+                    sortOrder = result['sortOrder'] # Capture returned sortOrder
+                    prompt_for_filters_all_gallery = False # Set to False after first prompt
+                    
+                    # Check if there are more items to display or if it's not the first page
+                    has_more_pages = current_offset + len(result['data']) < total_count
+                    can_go_back = current_offset > 0
+
+                    if result['data'] and (has_more_pages or can_go_back):
+                        print("\nNavigation:")
+                        if can_go_back:
+                            print("  1. Previous Page")
+                        if has_more_pages:
+                            print("  2. Next Page")
+                        print("  Any other key to exit pagination.")
+
+                        nav_choice = input("Enter your choice: ")
+
+                        if nav_choice == '1' and can_go_back:
+                            clear_terminal()
+                            offset = max(0, offset - current_limit) # Update offset for next iteration
+                            continue
+                        elif nav_choice == '2' and has_more_pages:
+                            clear_terminal()
+                            offset += current_limit # Update offset for next iteration
+                            
+                            continue
+                    # If no data, or no more pages and it's the first page, break out of the loop
+                    break
+                else:
+                    # If result is None (e.g., API error), break out of the loop
+                    break
+            input("\nPress Enter to continue...")
         elif choice == "6":
+            clear_terminal()
             delete_gallery_entry()
-            input("\nPress Enter to continue...\n\n")
+            input("\nPress Enter to continue...")
+            
         elif choice == "7":
+            clear_terminal()
             print("\nExiting CLI. Goodbye!")
             break
         else:
             print("\nInvalid choice. Please try again.")
-            input("Press Enter to continue...\n\n")
+            input("Press Enter to continue...")
 
 if __name__ == "__main__":
     main_menu()

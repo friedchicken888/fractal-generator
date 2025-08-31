@@ -32,20 +32,58 @@ exports.countHistoryByFractalId = (fractalId, callback) => {
     db.get(sql, [fractalId], callback);
 };
 
-exports.getAllHistory = (callback) => {
-    const sql = `
-        SELECT h.id, h.user_id, f.hash, f.width, f.height, f.iterations, f.power, f.c_real, f.c_imag, f.scale, f.offsetX, f.offsetY, f.colorScheme, h.generated_at
-        FROM history h
-        LEFT JOIN fractals f ON h.fractal_id = f.id
-        ORDER BY h.generated_at DESC
-    `;
-    db.all(sql, [], (err, rows) => {
+exports.getAllHistory = (filters, sortBy, sortOrder, limit, offset, callback) => {
+    let whereClauses = [];
+    let params = [];
+
+    if (filters.colorScheme) {
+        whereClauses.push(`f.colorScheme = ?`);
+        params.push(filters.colorScheme);
+    }
+    if (filters.power) {
+        whereClauses.push(`f.power = ?`);
+        params.push(filters.power);
+    }
+    if (filters.iterations) {
+        whereClauses.push(`f.iterations = ?`);
+        params.push(filters.iterations);
+    }
+    if (filters.width) {
+        whereClauses.push(`f.width = ?`);
+        params.push(filters.width);
+    }
+    if (filters.height) {
+        whereClauses.push(`f.height = ?`);
+        params.push(filters.height);
+    }
+
+    const whereSql = whereClauses.length > 0 ? `WHERE ` + whereClauses.join(` AND `) : ``;
+
+    const validSortColumns = ['id', 'hash', 'width', 'height', 'iterations', 'power', 'c_real', 'c_imag', 'scale', 'offsetX', 'offsetY', 'colorScheme', 'generated_at', 'user_id'];
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'generated_at';
+    const order = (sortOrder && sortOrder.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
+
+    const countSql = `SELECT COUNT(*) as totalCount FROM history h LEFT JOIN fractals f ON h.fractal_id = f.id ${whereSql}`;
+    db.get(countSql, params, (err, countRow) => {
         if (err) return callback(err);
-        // Manually map user_id to username
-        const historyWithUsernames = rows.map(row => {
-            const user = users.find(u => u.id === row.user_id);
-            return { ...row, username: user ? user.username : 'Unknown' };
+        const totalCount = countRow.totalCount;
+
+        const dataSql = `
+            SELECT h.id, h.user_id, f.hash, f.width, f.height, f.iterations, f.power, f.c_real, f.c_imag, f.scale, f.offsetX, f.offsetY, f.colorScheme, h.generated_at
+            FROM history h
+            LEFT JOIN fractals f ON h.fractal_id = f.id
+            ${whereSql}
+            ORDER BY ${sortColumn} ${order}
+            LIMIT ? OFFSET ?
+        `;
+        db.all(dataSql, [...params, limit, offset], (err, rows) => {
+            if (err) return callback(err);
+            // Manually map user_id to username
+            const historyWithUsernames = rows.map(row => {
+                const user = users.find(u => u.id === row.user_id);
+                return { ...row, username: user ? user.username : 'Unknown' };
+            });
+            callback(null, historyWithUsernames, totalCount);
         });
-        callback(null, historyWithUsernames);
     });
 };

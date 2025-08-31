@@ -8,7 +8,24 @@ const Gallery = require('../models/gallery.model.js');
 
 // GET user gallery
 router.get('/gallery', verifyToken, (req, res) => {
-    Gallery.getGalleryForUser(req.user.id, (err, rows) => {
+    let limit = parseInt(req.query.limit) || 5; // Default limit to 5
+    if (req.user.role !== 'admin') {
+        limit = Math.min(limit, 5);
+    }
+    const offset = parseInt(req.query.offset) || 0; // Default offset to 0
+
+    const filters = {
+        colorScheme: req.query.colorScheme,
+        power: parseFloat(req.query.power),
+        iterations: parseInt(req.query.iterations),
+        width: parseInt(req.query.width),
+        height: parseInt(req.query.height)
+    };
+
+    const sortBy = req.query.sortBy;
+    const sortOrder = req.query.sortOrder;
+
+    Gallery.getGalleryForUser(req.user.id, filters, sortBy, sortOrder, limit, offset, (err, rows, totalCount) => {
         if (err) {
             return res.status(500).send("Database error");
         }
@@ -16,7 +33,7 @@ router.get('/gallery', verifyToken, (req, res) => {
             const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
             return { ...row, url: fractalUrl };
         });
-        res.json(galleryWithUrls);
+        res.json({ data: galleryWithUrls, totalCount, limit, offset, filters, sortBy, sortOrder });
     });
 });
 
@@ -83,7 +100,24 @@ router.get('/admin/history', verifyToken, (req, res) => {
         return res.status(403).send('Access denied. Admin privileges required.');
     }
 
-    History.getAllHistory((err, rows) => {
+    let limit = parseInt(req.query.limit) || 5; // Default limit to 5
+    if (req.user.role !== 'admin') {
+        limit = Math.min(limit, 5);
+    }
+    const offset = parseInt(req.query.offset) || 0; // Default offset to 0
+
+    const filters = {
+        colorScheme: req.query.colorScheme,
+        power: parseFloat(req.query.power),
+        iterations: parseInt(req.query.iterations),
+        width: parseInt(req.query.width),
+        height: parseInt(req.query.height)
+    };
+
+    const sortBy = req.query.sortBy;
+    const sortOrder = req.query.sortOrder;
+
+    History.getAllHistory(filters, sortBy, sortOrder, limit, offset, (err, rows, totalCount) => {
         if (err) {
             return res.status(500).send("Database error");
         }
@@ -91,7 +125,7 @@ router.get('/admin/history', verifyToken, (req, res) => {
             const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
             return { ...row, url: fractalUrl };
         });
-        res.json(historyWithUrls);
+        res.json({ data: historyWithUrls, totalCount, limit, offset, filters, sortBy, sortOrder });
     });
 });
 
@@ -101,7 +135,24 @@ router.get('/admin/gallery', verifyToken, (req, res) => {
         return res.status(403).send('Access denied. Admin privileges required.');
     }
 
-    Gallery.getAllGallery((err, rows) => {
+    let limit = parseInt(req.query.limit) || 5; // Default limit to 5
+    if (req.user.role !== 'admin') {
+        limit = Math.min(limit, 5);
+    }
+    const offset = parseInt(req.query.offset) || 0; // Default offset to 0
+
+    const filters = {
+        colorScheme: req.query.colorScheme,
+        power: parseFloat(req.query.power),
+        iterations: parseInt(req.query.iterations),
+        width: parseInt(req.query.width),
+        height: parseInt(req.query.height)
+    };
+
+    const sortBy = req.query.sortBy;
+    const sortOrder = req.query.sortOrder;
+
+    Gallery.getAllGallery(filters, sortBy, sortOrder, limit, offset, (err, rows, totalCount) => {
         if (err) {
             return res.status(500).send("Database error");
         }
@@ -109,7 +160,7 @@ router.get('/admin/gallery', verifyToken, (req, res) => {
             const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
             return { ...row, url: fractalUrl };
         });
-        res.json(galleryWithUrls);
+        res.json({ data: galleryWithUrls, totalCount, limit, offset, filters, sortBy, sortOrder });
     });
 });
 
