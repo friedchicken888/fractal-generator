@@ -1,24 +1,27 @@
 const express = require('express');
 const router = express.Router();
-const { verifyToken } = require('./auth.js');
+const { verifyToken, isAdmin } = require('./auth.js');
 const fs = require('fs');
 const History = require('../models/history.model.js');
 const Fractal = require('../models/fractal.model.js');
 const Gallery = require('../models/gallery.model.js');
 
 router.get('/gallery', verifyToken, (req, res) => {
-    let limit = parseInt(req.query.limit) || 5; // Default limit to 5
-    if (req.user.role !== 'admin') {
-        limit = Math.min(limit, 5);
-    }
+    let limit = parseInt(req.query.limit) || 10; // Default limit to 10 (matching frontend)
     const offset = parseInt(req.query.offset) || 0; // Default offset to 0
 
     const filters = {
-        colorScheme: req.query.colorScheme,
-        power: parseFloat(req.query.power),
-        iterations: parseInt(req.query.iterations),
         width: parseInt(req.query.width),
-        height: parseInt(req.query.height)
+        height: parseInt(req.query.height),
+        maxIterations: parseInt(req.query.maxIterations),
+        c_real: parseFloat(req.query.c_real),
+        c_imag: parseFloat(req.query.c_imag),
+        power: parseFloat(req.query.power),
+        scale: parseFloat(req.query.scale),
+        offsetX: parseFloat(req.query.offsetX),
+        offsetY: parseFloat(req.query.offsetY),
+        colorScheme: req.query.colorScheme,
+        hash: req.query.hash
     };
 
     const sortBy = req.query.sortBy;
@@ -26,7 +29,7 @@ router.get('/gallery', verifyToken, (req, res) => {
 
     Gallery.getGalleryForUser(req.user.id, filters, sortBy, sortOrder, limit, offset, (err, rows, totalCount) => {
         if (err) {
-            return res.status(500).send("Database error");
+            return res.status(500).json({ message: "Database error" });
         }
         const galleryWithUrls = rows.map(row => {
             const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
@@ -43,13 +46,13 @@ router.delete('/gallery/:id', verifyToken, (req, res) => {
 
     Gallery.getGalleryEntry(galleryId, userId, isAdmin, (err, row) => {
         if (err) {
-            return res.status(500).send("Database error");
+            return res.status(500).json({ message: "Database error" });
         }
         if (!row) {
             if (!isAdmin) {
                 return res.status(404).send("Gallery entry not found or you don't have permission to delete it.");
             } else {
-                return res.status(404).send("Gallery entry not found.");
+                return res.status(404).json({ message: "Gallery entry not found." });
             }
         }
 
@@ -58,7 +61,7 @@ router.delete('/gallery/:id', verifyToken, (req, res) => {
 
         Gallery.deleteGalleryEntry(galleryId, userId, isAdmin, function (err) {
             if (err) {
-                return res.status(500).send("Database error");
+                return res.status(500).json({ message: "Database error" });
             }
 
             Gallery.countGalleryByFractalHash(fractalHash, (err, row) => {
@@ -114,7 +117,7 @@ router.get('/admin/history', verifyToken, (req, res) => {
 
     History.getAllHistory(filters, sortBy, sortOrder, limit, offset, (err, rows, totalCount) => {
         if (err) {
-            return res.status(500).send("Database error");
+            return res.status(500).json({ message: "Database error" });
         }
         const historyWithUrls = rows.map(row => {
             const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;
@@ -150,7 +153,7 @@ router.get('/admin/gallery', verifyToken, (req, res) => {
 
     Gallery.getAllGallery(filters, sortBy, sortOrder, limit, offset, (err, rows, totalCount) => {
         if (err) {
-            return res.status(500).send("Database error");
+            return res.status(500).json({ message: "Database error" });
         }
         const galleryWithUrls = rows.map(row => {
             const fractalUrl = `${req.protocol}://${req.get('host')}/fractals/${row.hash}.png`;

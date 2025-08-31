@@ -1,4 +1,6 @@
 const db = require('./database');
+const History = require('./models/history.model'); // Import History model
+const Gallery = require('./models/gallery.model'); // Import Gallery model
 
 const User = {
     findByUsername: (username, callback) => {
@@ -48,7 +50,32 @@ const User = {
             }
 
             db.all(dataSql, params, (err, rows) => {
-                callback(err, rows, totalCount);
+                if (err) return callback(err);
+
+                // Fetch counts for each user
+                const usersWithCountsPromises = rows.map(user => {
+                    return new Promise((resolve, reject) => {
+                        History.countByUserId(user.id, (err, historyCountRow) => {
+                            if (err) return reject(err);
+                            Gallery.countByUserId(user.id, (err, galleryCountRow) => {
+                                if (err) return reject(err);
+                                resolve({
+                                    ...user,
+                                    generated_fractals_count: historyCountRow.count,
+                                    gallery_fractals_count: galleryCountRow.count
+                                });
+                            });
+                        });
+                    });
+                });
+
+                Promise.all(usersWithCountsPromises)
+                    .then(usersWithCounts => {
+                        callback(null, usersWithCounts, totalCount);
+                    })
+                    .catch(error => {
+                        callback(error);
+                    });
             });
         });
     }

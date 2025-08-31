@@ -17,7 +17,7 @@ router.post('/login', (req, res) => {
     User.findByUsername(username, (err, user) => {
         if (err) {
             console.error("Database error during login:", err);
-            return res.status(500).send("Internal server error");
+            return res.status(500).json({ message: "Internal server error" });
         }
 
         if (!user) {
@@ -64,3 +64,4 @@ function isAdmin(req, res, next) {
 }
 
 module.exports = { router, verifyToken, isAdmin };
+

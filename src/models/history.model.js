@@ -1,5 +1,5 @@
 const db = require('../database.js');
-const User = require('../users.js');
+const User = require('../users.js'); // Keep this import, though not directly used in getAllHistory anymore
 
 exports.getHistoryForUser = (userId, callback) => {
     const sql = `
@@ -27,6 +27,11 @@ exports.deleteHistoryEntry = (id, callback) => {
     db.run(sql, [id], callback);
 };
 
+exports.getHistoryEntryByUserAndFractal = (userId, fractalId, callback) => {
+    const sql = "SELECT generated_at FROM history WHERE user_id = ? AND fractal_id = ?";
+    db.get(sql, [userId, fractalId], callback);
+};
+
 exports.countHistoryByFractalId = (fractalId, callback) => {
     const sql = "SELECT COUNT(*) as count FROM history WHERE fractal_id = ?";
     db.get(sql, [fractalId], callback);
@@ -36,44 +41,24 @@ exports.getAllHistory = (filters, sortBy, sortOrder, limit, offset, callback) =>
     let whereClauses = [];
     let params = [];
 
-    if (filters.colorScheme) {
-        whereClauses.push(`f.colorScheme = ?`);
-        params.push(filters.colorScheme);
-    }
-    if (filters.power) {
-        whereClauses.push(`f.power = ?`);
-        params.push(filters.power);
-    }
-    if (filters.iterations) {
-        whereClauses.push(`f.iterations = ?`);
-        params.push(filters.iterations);
-    }
-    if (filters.width) {
-        whereClauses.push(`f.width = ?`);
-        params.push(filters.width);
-    }
-    if (filters.height) {
-        whereClauses.push(`f.height = ?`);
-        params.push(filters.height);
-    }
+    // Add a JOIN clause for the fractals table
+    let joinSql = `LEFT JOIN fractals f ON h.fractal_id = f.id`;
+
+    // No username filter, so no conditional join or where clause for username
 
     const whereSql = whereClauses.length > 0 ? `WHERE ` + whereClauses.join(` AND `) : ``;
 
-    const validSortColumns = ['id', 'hash', 'width', 'height', 'iterations', 'power', 'c_real', 'c_imag', 'scale', 'offsetX', 'offsetY', 'colorScheme', 'generated_at', 'user_id'];
-    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'generated_at';
-    const order = (sortOrder && sortOrder.toUpperCase() === 'ASC') ? 'ASC' : 'DESC';
-
-    const countSql = `SELECT COUNT(*) as totalCount FROM history h LEFT JOIN fractals f ON h.fractal_id = f.id ${whereSql}`;
-    db.get(countSql, params, (err, countRow) => {
+    const countSql = `SELECT COUNT(*) as totalCount FROM history h ${joinSql} ${whereSql}`;
+    db.get(countSql, params, (err, row) => {
         if (err) return callback(err);
-        const totalCount = countRow.totalCount;
+        const totalCount = row.totalCount;
 
         const dataSql = `
-            SELECT h.id, h.user_id, f.hash, f.width, f.height, f.iterations, f.power, f.c_real, f.c_imag, f.scale, f.offsetX, f.offsetY, f.colorScheme, h.generated_at
+            SELECT h.id, h.user_id, h.fractal_id, f.hash, f.width, f.height, f.iterations, f.power, f.c_real, f.c_imag, f.scale, f.offsetX, f.offsetY, f.colorScheme, h.generated_at
             FROM history h
-            LEFT JOIN fractals f ON h.fractal_id = f.id
+            ${joinSql}
             ${whereSql}
-            ORDER BY ${sortColumn} ${order}
+            ORDER BY ${sortBy} ${sortOrder}
         `;
         let query = dataSql;
         let queryParams = [...params];
@@ -85,22 +70,12 @@ exports.getAllHistory = (filters, sortBy, sortOrder, limit, offset, callback) =>
 
         db.all(query, queryParams, (err, rows) => {
             if (err) return callback(err);
-
-            User.getAll((err, usersData) => {
-                if (err) {
-                    console.error("Error fetching users for history:", err);
-                    return callback(err);
-                }
-                const userMap = {};
-                usersData.forEach(user => {
-                    userMap[user.id] = user.username;
-                });
-
-                const historyWithUsernames = rows.map(row => {
-                    return { ...row, username: userMap[row.user_id] || 'Unknown' };
-                });
-                callback(null, historyWithUsernames, totalCount);
-            });
+            callback(null, rows, totalCount);
         });
     });
+};
+
+exports.countByUserId = (userId, callback) => {
+    const sql = "SELECT COUNT(*) as count FROM history WHERE user_id = ?";
+    db.get(sql, [userId], callback);
 };

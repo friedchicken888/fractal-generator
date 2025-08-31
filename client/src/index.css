@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 95.9%; /* Light grey background */
+    --foreground: 0 0% 4.9%;  /* Dark grey foreground */
+
+    --card: 0 0% 95.9%;
+    --card-foreground: 0 0% 4.9%;
+
+    --popover: 0 0% 95.9%;
+    --popover-foreground: 0 0% 4.9%;
+
+    --primary: 0 0% 25%; /* Medium grey primary */
+    --primary-foreground: 0 0% 98%; /* Light grey text on primary */
+
+    --secondary: 0 0% 85%; /* Lighter grey secondary */
+    --secondary-foreground: 0 0% 20%; /* Darker grey text on secondary */
+
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 0% 85%;
+    --accent-foreground: 0 0% 20%;
+
+    --destructive: 0 84.2% 60.2%; /* Red for destructive actions */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 80%;
+    --input: 0 0% 80%;
+    --ring: 0 0% 25%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 0 0% 10%; /* Very dark grey background */
+    --foreground: 0 0% 90%;  /* Light grey foreground */
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 90%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 90%;
+
+    --primary: 0 0% 70%; /* Lighter grey primary */
+    --primary-foreground: 0 0% 15%; /* Darker grey text on primary */
+
+    --secondary: 0 0% 20%; /* Darker grey secondary */
+    --secondary-foreground: 0 0% 80%; /* Lighter grey text on secondary */
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 80%;
+
+    --destructive: 0 62.8% 30.6%; /* Darker red for destructive actions */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 25%;
+    --input: 0 0% 25%;
+    --ring: 0 0% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body, #root { /* Ensure html, body, and root div take full height */
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: Helvetica, Arial, sans-serif;
+  }
+}

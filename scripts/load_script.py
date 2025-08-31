@@ -48,7 +48,7 @@ def run_load_test(duration_seconds):
 
         headers = {"Authorization": f"Bearer {jwt_token}"}
 
-        params = {
+        payload = {
             "width": 1920,
             "height": 1080,
             "maxIterations": random.randint(250, 2500),
@@ -56,17 +56,19 @@ def run_load_test(duration_seconds):
             "scale": round(random.uniform(0.5, 1.5), 3),
             "offsetX": round(random.uniform(-1, 1), 3),
             "offsetY": round(random.uniform(-1, 1), 3),
-            "color": random.choice(COLOUR_SCHEMES),
-            "real": round(random.uniform(-2, 2), 3),
-            "imag": round(random.uniform(-2, 2), 3)
+            "colorScheme": random.choice(COLOUR_SCHEMES),
+            "c": {
+                "real": round(random.uniform(-2, 2), 3),
+                "imag": round(random.uniform(-2, 2), 3)
+            }
         }
 
         request_count += 1
-        print(f'\nRequest {request_count} (as {selected_user["username"]}) with params {params}\n')
+        print(f'\nRequest {request_count} (as {selected_user["username"]}) with payload {payload}\n')
 
         req_start = time.time()
         try:
-            resp = requests.get(FRACTAL_URL, params=params, headers=headers, timeout=180)
+            resp = requests.post(FRACTAL_URL, json=payload, headers=headers, timeout=180)
             req_time = time.time() - req_start
 
             if resp.status_code == 200:
@@ -106,7 +108,7 @@ if __name__ == "__main__":
         ip_address = "localhost"
     BASE_URL = f"http://{ip_address}:3000"
     LOGIN_URL = f"{BASE_URL}/api/auth/login"
-    FRACTAL_URL = f"{BASE_URL}/api/fractal"
+    FRACTAL_URL = f"{BASE_URL}/api/generate"
 
     duration_input = input("Enter the duration in minutes (leave empty for indefinite): ")
     duration_seconds = None

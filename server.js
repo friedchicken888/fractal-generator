@@ -7,6 +7,7 @@
 require('dotenv').config();
 const express = require('express');
 const fs = require('fs');
+const cors = require('cors');
 const authRouter = require('./src/routes/auth').router;
 const fractalRouter = require('./src/routes/fractal');
 const historyRouter = require('./src/routes/history');
@@ -15,6 +16,7 @@ const adminRouter = require('./src/routes/admin');
 const app = express();
 const port = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 app.use('/fractals', express.static('fractals'));
 
