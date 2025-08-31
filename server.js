@@ -10,6 +10,7 @@ const fs = require('fs');
 const authRouter = require('./src/routes/auth').router;
 const fractalRouter = require('./src/routes/fractal');
 const historyRouter = require('./src/routes/history');
+const adminRouter = require('./src/routes/admin');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -25,6 +26,7 @@ if (!fs.existsSync(fractalsDir)){
 app.use('/api/auth', authRouter);
 app.use('/api', fractalRouter);
 app.use('/api', historyRouter);
+app.use('/api/admin', adminRouter);
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);

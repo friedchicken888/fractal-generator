@@ -93,9 +93,11 @@ router.get('/admin/history', verifyToken, (req, res) => {
         return res.status(403).send('Access denied. Admin privileges required.');
     }
 
-    let limit = parseInt(req.query.limit) || 5;
-    if (req.user.role !== 'admin') {
-        limit = Math.min(limit, 5);
+    let limit = parseInt(req.query.limit);
+    if (req.user.role === 'admin' && limit === 0) {
+        limit = null; // No limit for admins when 0 is provided
+    } else if (isNaN(limit)) {
+        limit = 5; // Default limit
     }
     const offset = parseInt(req.query.offset) || 0;
 
@@ -127,9 +129,11 @@ router.get('/admin/gallery', verifyToken, (req, res) => {
         return res.status(403).send('Access denied. Admin privileges required.');
     }
 
-    let limit = parseInt(req.query.limit) || 5;
-    if (req.user.role !== 'admin') {
-        limit = Math.min(limit, 5);
+    let limit = parseInt(req.query.limit);
+    if (req.user.role === 'admin' && limit === 0) {
+        limit = null; // No limit for admins when 0 is provided
+    } else if (isNaN(limit)) {
+        limit = 5; // Default limit
     }
     const offset = parseInt(req.query.offset) || 0;
 

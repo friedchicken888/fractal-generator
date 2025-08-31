@@ -1,5 +1,5 @@
 const db = require('../database.js');
-const users = require('../users.js');
+const User = require('../users.js');
 
 exports.addToGallery = (userId, fractalId, fractalHash, callback) => {
     const sql = "INSERT OR IGNORE INTO gallery (user_id, fractal_id, fractal_hash) VALUES (?, ?, ?)";
@@ -130,15 +130,33 @@ exports.getAllGallery = (filters, sortBy, sortOrder, limit, offset, callback) =>
             JOIN fractals f ON g.fractal_id = f.id
             ${whereSql}
             ORDER BY ${sortColumn} ${order}
-            LIMIT ? OFFSET ?
         `;
-        db.all(dataSql, [...params, limit, offset], (err, rows) => {
+        let query = dataSql;
+        let queryParams = [...params];
+
+        if (limit > 0) {
+            query += ' LIMIT ? OFFSET ?';
+            queryParams.push(limit, offset);
+        }
+
+        db.all(query, queryParams, (err, rows) => {
             if (err) return callback(err);
-            const galleryWithUsernames = rows.map(row => {
-                const user = users.find(u => u.id === row.user_id);
-                return { ...row, username: user ? user.username : 'Unknown' };
+
+            User.getAll((err, usersData) => {
+                if (err) {
+                    console.error("Error fetching users for gallery:", err);
+                    return callback(err);
+                }
+                const userMap = {};
+                usersData.forEach(user => {
+                    userMap[user.id] = user.username;
+                });
+
+                const galleryWithUsernames = rows.map(row => {
+                    return { ...row, username: userMap[row.user_id] || 'Unknown' };
+                });
+                callback(null, galleryWithUsernames, totalCount);
             });
-            callback(null, galleryWithUsernames, totalCount);
         });
     });
 };

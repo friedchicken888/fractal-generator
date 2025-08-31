@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const users = require('../users');
+const User = require('../users');
 
 const router = express.Router();
 
@@ -14,23 +14,28 @@ router.post('/login', (req, res) => {
         return res.status(400).send('Username and password are required');
     }
 
-    const user = users.find(u => u.username === username);
+    User.findByUsername(username, (err, user) => {
+        if (err) {
+            console.error("Database error during login:", err);
+            return res.status(500).send("Internal server error");
+        }
 
-    if (!user) {
-        return res.status(401).send('Invalid username or password');
-    }
+        if (!user) {
+            return res.status(401).send('Invalid username or password');
+        }
 
-    const isPasswordValid = bcrypt.compareSync(password, user.password);
+        const isPasswordValid = bcrypt.compareSync(password, user.password);
 
-    if (!isPasswordValid) {
-        return res.status(401).send('Invalid username or password');
-    }
+        if (!isPasswordValid) {
+            return res.status(401).send('Invalid username or password');
+        }
 
-    const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, {
-        expiresIn: '1h'
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role, can_generate_fractals: user.can_generate_fractals }, JWT_SECRET, {
+            expiresIn: '1h'
+        });
+
+        res.json({ token });
     });
-
-    res.json({ token });
 });
 
 function verifyToken(req, res, next) {
@@ -50,4 +55,12 @@ function verifyToken(req, res, next) {
     }
 }
 
-module.exports = { router, verifyToken };
+function isAdmin(req, res, next) {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        res.status(403).send('Access denied. Admin privileges required.');
+    }
+}
+
+module.exports = { router, verifyToken, isAdmin };

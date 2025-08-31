@@ -1,19 +1,22 @@
 const express = require('express');
 const router = express.Router();
-const { generateFractal } = require('../fractal');
+const { generateFractal } = require('../fractalGenerator');
 const fs = require('fs');
 const crypto = require('crypto');
-const { verifyToken } = require('./auth.js');
+const { verifyToken, isAdmin } = require('./auth.js');
 const Fractal = require('../models/fractal.model.js');
 const History = require('../models/history.model.js');
 const Gallery = require('../models/gallery.model.js');
 
 const fractalsDir = './fractals';
 
-// Track if a fractal is currently being generated
 let isGenerating = false;
 
 router.get('/fractal', verifyToken, async (req, res) => {
+    if (req.user.role !== 'admin' && !req.user.can_generate_fractals) {
+        return res.status(403).send('Fractal generation is currently disabled for your account. Please contact an administrator.');
+    }
+
     if (isGenerating) {
         return res.status(429).send('Another fractal is currently generating. Try again later.');
     }

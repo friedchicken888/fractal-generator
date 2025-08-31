@@ -1,10 +1,10 @@
 import os
 import requests
-import json
 
 BASE_URL = ""
 USERS = {
     "user": {"username": "user", "password": "user"},
+    "user2": {"username": "user2", "password": "user2"},
     "admin": {"username": "admin", "password": "admin"}
 }
 
@@ -19,6 +19,7 @@ def login(username, password):
         data = r.json()
         current_token = data['token']
         current_user_role = username
+
         print(f"Logged in as {username}.")
         return True
     except requests.exceptions.RequestException as e:
@@ -70,8 +71,76 @@ def generate_fractal():
             print(f"\nFractal generated successfully! Hash: {fractal_hash}")
         else:
             print(f"\nFractal generated successfully! Unexpected response: {data}")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None:
+            print(f"\nFractal generation failed: {e.response.text}")
+        else:
+            print(f"\nFractal generation failed: {e}")
     except requests.exceptions.RequestException as e:
         print(f"\nFractal generation failed: {e}")
+
+def list_users(limit=None, offset=None):
+    if not current_token:
+        print("Please log in first.")
+        return
+    if current_user_role != "admin":
+        print("Admin privileges required to list users.")
+        return
+
+    headers = {"Authorization": f"Bearer {current_token}"}
+    query_params = {}
+    if limit is not None: query_params["limit"] = int(limit)
+    if offset is not None: query_params["offset"] = int(offset)
+
+    try:
+        r = requests.get(f"{BASE_URL}/admin/users", headers=headers, params=query_params)
+        r.raise_for_status()
+        response_data = r.json()
+        data = response_data.get('data', [])
+        total_count = response_data.get('totalCount', len(data))
+        current_limit = response_data.get('limit', len(data))
+        current_offset = response_data.get('offset', 0)
+
+        print(f"\n--- All Users (Total: {total_count}, Showing {current_offset}-{current_offset + len(data)} of {total_count}) ---")
+        if data:
+            for user in data:
+                print(f"ID: {user.get('id')}, Username: {user.get('username')}, Role: {user.get('role')}, Can Generate: {user.get('can_generate_fractals')}")
+        else:
+            print("No users found.")
+
+        return {'data': data, 'totalCount': total_count, 'limit': current_limit, 'offset': current_offset}
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to retrieve users: {e}")
+        if e.response is not None:
+            print(f"HTTP Status Code: {e.response.status_code}")
+            print(f"Response Body: {e.response.text}")
+        return None
+
+def toggle_user_generation():
+    if not current_token:
+        print("Please log in first.")
+        return
+    if current_user_role != "admin":
+        print("Admin privileges required to toggle user generation.")
+        return
+
+    user_id = input("Enter User ID to toggle fractal generation for: ")
+    if not user_id.isdigit():
+        print("Invalid User ID. Please enter a number.")
+        return
+
+    headers = {"Authorization": f"Bearer {current_token}"}
+    try:
+        r = requests.put(f"{BASE_URL}/admin/users/{user_id}/toggle-generation", headers=headers)
+        r.raise_for_status()
+        response_data = r.json()
+        new_status = response_data.get('can_generate_fractals', 'unknown')
+        print(f"Successfully toggled fractal generation for user ID {user_id}. New status: {new_status}")
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to toggle fractal generation for user ID {user_id}: {e}")
+        if e.response is not None:
+            print(f"HTTP Status Code: {e.response.status_code}")
+            print(f"Response Body: {e.response.text}")
 
 def view_data(view_type="my_gallery", limit=None, offset=None, filters=None, sortBy=None, sortOrder=None, prompt_for_filters=True):
     if not current_token:
@@ -101,7 +170,8 @@ def view_data(view_type="my_gallery", limit=None, offset=None, filters=None, sor
         return
 
     query_params = {}
-    if limit is not None: query_params["limit"] = int(limit)
+    if limit is not None:
+        query_params["limit"] = int(limit)
     if offset is not None: query_params["offset"] = int(offset)
 
     if prompt_for_filters:
@@ -192,6 +262,15 @@ def delete_gallery_entry():
         r = requests.delete(f"{BASE_URL}/gallery/{gallery_id}", headers=headers)
         r.raise_for_status()
         print(f"Gallery entry {gallery_id} deleted successfully.")
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            print(f"Gallery entry {gallery_id} not found.")
+        elif e.response.status_code == 403:
+            print(f"Access denied. You do not have permission to delete gallery entry {gallery_id}.")
+        else:
+            print(f"Failed to delete gallery entry {gallery_id}: {e}")
+            print(f"HTTP Status Code: {e.response.status_code}")
+            print(f"Response Body: {e.response.text}")
     except requests.exceptions.RequestException as e:
         print(f"Failed to delete gallery entry {gallery_id}: {e}")
 
@@ -214,11 +293,9 @@ def main_menu():
         print("1. Select User (Login)")
         print("2. Generate Fractal")
         print("3. View My Gallery")
-        if current_user_role == "admin":
-            print("4. View All History (Admin)")
-            print("5. View All Gallery (Admin)")
-        print("6. Delete Gallery Entry")
-        print("7. Exit")
+        print("4. Admin Menu")
+        print("5. Delete Gallery Entry")
+        print("6. Exit")
 
         print()
         choice = input("Enter your choice: ")
@@ -305,7 +382,93 @@ def main_menu():
                     break
             input("\nPress Enter to continue...")
         
-        elif choice == "4" and current_user_role == "admin":
+        elif choice == "4":
+            admin_menu()
+            
+        elif choice == "5":
+            clear_terminal()
+            delete_gallery_entry()
+            input("\nPress Enter to continue...")
+            
+        elif choice == "6":
+            clear_terminal()
+            print("\nExiting CLI. Goodbye!")
+            break
+        else:
+            print("\nInvalid choice. Please try again.")
+            input("Press Enter to continue...")
+
+def admin_menu():
+    while True:
+        clear_terminal()
+        print("\n--- Admin Menu ---")
+        print("1. List All Users")
+        print("2. Toggle User Fractal Generation")
+        print("3. View All History")
+        print("4. View All Gallery")
+        print("5. Back to Main Menu")
+
+        print()
+        choice = input("Enter your choice: ")
+
+        if choice == "1":
+            current_limit = None
+            current_offset = 0
+            print("\n--- List All Users (Admin) ---")
+            limit_input = input(f"Enter limit (leave blank for default 5, current: {current_limit if current_limit is not None else 'default'}):")
+            offset_input = input(f"Enter offset (leave blank for current {current_offset}): ")
+                
+            limit = int(limit_input) if limit_input else current_limit
+            offset = int(offset_input) if offset_input else current_offset
+
+            if limit is None:
+                limit = 5
+
+            filters = None # Users don't have filters yet
+            sortBy = None # Users don't have sortBy yet
+            sortOrder = None # Users don't have sortOrder yet
+            prompt_for_filters_all_users = False # No filters for users
+
+            while True:
+                result = list_users(limit=limit, offset=offset)
+                
+                if result:
+                    current_limit = result['limit']
+                    current_offset = result['offset']
+                    total_count = result['totalCount']
+                    
+                    has_more_pages = current_offset + len(result['data']) < total_count
+                    can_go_back = current_offset > 0
+
+                    if result['data'] and (has_more_pages or can_go_back):
+                        print("\nNavigation:")
+                        if can_go_back:
+                            print("  1. Previous Page")
+                        if has_more_pages:
+                            print("  2. Next Page")
+                        print("  Any other key to exit pagination.")
+
+                        nav_choice = input("Enter your choice: ")
+
+                        if nav_choice == '1' and can_go_back:
+                            clear_terminal()
+                            offset = max(0, offset - current_limit)
+                            
+                            continue
+                        elif nav_choice == '2' and has_more_pages:
+                            clear_terminal()
+                            offset += current_limit
+                            
+                            continue
+                    break
+                else:
+                    break
+            input("\nPress Enter to continue...")
+        elif choice == "2":
+            clear_terminal()
+            toggle_user_generation()
+            input("\nPress Enter to continue...")
+        elif choice == "3":
             current_limit = None
             current_offset = 0
             print("\n--- View All History (Admin) ---")
@@ -362,7 +525,7 @@ def main_menu():
                 else:
                     break
             input("\nPress Enter to continue...")
-        elif choice == "5" and current_user_role == "admin":
+        elif choice == "4":
             current_limit = None
             current_offset = 0
             print("\n--- View All Gallery (Admin) ---")
@@ -418,14 +581,7 @@ def main_menu():
                 else:
                     break
             input("\nPress Enter to continue...")
-        elif choice == "6":
-            clear_terminal()
-            delete_gallery_entry()
-            input("\nPress Enter to continue...")
-            
-        elif choice == "7":
-            clear_terminal()
-            print("\nExiting CLI. Goodbye!")
+        elif choice == "5":
             break
         else:
             print("\nInvalid choice. Please try again.")

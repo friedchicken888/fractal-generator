@@ -84,6 +84,8 @@ def run_load_test(duration_seconds):
                     print(f"Request {request_count} done in {req_time:.2f}s. Response not JSON, size={len(resp.content)} \n")
             elif resp.status_code == 499:
                 print(f"Request {request_count} aborted (time limit exceeded) after {req_time:.2f}s\n")
+            elif resp.status_code == 403:
+                print(f"Request {request_count} failed with status {resp.status_code}: Fractal generation disabled for {selected_user['username']}. Content: {resp.text}\n")
             else:
                 print(f"Request {request_count} failed with status {resp.status_code}, content: {resp.text}\n")
 
