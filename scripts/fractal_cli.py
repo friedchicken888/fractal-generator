@@ -100,12 +100,11 @@ def view_data(view_type="my_gallery", limit=None, offset=None, filters=None, sor
         print("Invalid view type.")
         return
 
-    # Collect pagination, filter, and sort parameters
     query_params = {}
     if limit is not None: query_params["limit"] = int(limit)
     if offset is not None: query_params["offset"] = int(offset)
 
-    if prompt_for_filters: # Use the new flag to control prompting
+    if prompt_for_filters:
         print("\n--- Filters (leave blank to skip) ---")
         colorScheme = input("Color Scheme: ")
         power = input("Power: ")
@@ -113,7 +112,7 @@ def view_data(view_type="my_gallery", limit=None, offset=None, filters=None, sor
         width = input("Width: ")
         height = input("Height: ")
         
-        filters = {} # Re-initialize filters if prompting
+        filters = {}
         if colorScheme: filters["colorScheme"] = colorScheme
         if power: filters["power"] = float(power)
         if iterations: filters["iterations"] = int(iterations)
@@ -143,11 +142,9 @@ def view_data(view_type="my_gallery", limit=None, offset=None, filters=None, sor
         if data:
             print(f"\n--- {title} (Total: {total_count}, Showing {current_offset}-{current_offset + len(data)} of {total_count}) ---")
             for entry in data:
-                # Determine if it's a gallery or history entry to get correct timestamp field
                 timestamp_field = 'added_at' if 'added_at' in entry else 'generated_at'
                 user_info = f", User: {entry.get('username')}" if 'username' in entry else ''
                 
-                # Handle potentially None values for fractal details
                 fractal_hash = entry.get('hash')
                 display_hash = fractal_hash[:8] + '...' if fractal_hash else 'N/A (Deleted)'
                 
@@ -262,14 +259,13 @@ def main_menu():
             limit = int(limit_input) if limit_input else current_limit
             offset = int(offset_input) if offset_input else current_offset
 
-            if limit is None: # If user didn't provide limit and it's the first run
-                limit = 5 # Use the actual default
+            if limit is None:
+                limit = 5
 
-            # Initialize filters, sortBy, sortOrder outside the loop
             filters = None
             sortBy = None
             sortOrder = None
-            prompt_for_filters_my_gallery = True # New flag
+            prompt_for_filters_my_gallery = True
 
             while True:
                 result = view_data(view_type="my_gallery", limit=limit, offset=offset, filters=filters, sortBy=sortBy, sortOrder=sortOrder, prompt_for_filters=prompt_for_filters_my_gallery)
@@ -278,12 +274,11 @@ def main_menu():
                     current_limit = result['limit']
                     current_offset = result['offset']
                     total_count = result['totalCount']
-                    filters = result['filters'] # Capture returned filters
-                    sortBy = result['sortBy']   # Capture returned sortBy
-                    sortOrder = result['sortOrder'] # Capture returned sortOrder
-                    prompt_for_filters_my_gallery = False # Set to False after first prompt
+                    filters = result['filters']
+                    sortBy = result['sortBy']
+                    sortOrder = result['sortOrder']
+                    prompt_for_filters_my_gallery = False
                     
-                    # Check if there are more items to display or if it's not the first page
                     has_more_pages = current_offset + len(result['data']) < total_count
                     can_go_back = current_offset > 0
 
@@ -299,18 +294,16 @@ def main_menu():
 
                         if nav_choice == '1' and can_go_back:
                             clear_terminal()
-                            offset = max(0, offset - current_limit) # Update offset for next iteration
+                            offset = max(0, offset - current_limit)
                             continue
                         elif nav_choice == '2' and has_more_pages:
                             clear_terminal()
-                            offset += current_limit # Update offset for next iteration
+                            offset += current_limit
                             continue
-                    # If no data, or no more pages and it's the first page, break out of the loop
                     break
                 else:
-                    # If result is None (e.g., API error), break out of the loop
                     break
-            input("\nPress Enter to continue...") # No  here
+            input("\nPress Enter to continue...")
         
         elif choice == "4" and current_user_role == "admin":
             current_limit = None
@@ -322,14 +315,13 @@ def main_menu():
             limit = int(limit_input) if limit_input else current_limit
             offset = int(offset_input) if offset_input else current_offset
 
-            if limit is None: # If user didn't provide limit and it's the first run
-                limit = 5 # Use the actual default
+            if limit is None:
+                limit = 5
 
-            # Initialize filters, sortBy, sortOrder outside the loop
             filters = None
             sortBy = None
             sortOrder = None
-            prompt_for_filters_all_history = True # New flag
+            prompt_for_filters_all_history = True
 
             while True:
                 result = view_data(view_type="all_history", limit=limit, offset=offset, filters=filters, sortBy=sortBy, sortOrder=sortOrder, prompt_for_filters=prompt_for_filters_all_history)
@@ -338,12 +330,11 @@ def main_menu():
                     current_limit = result['limit']
                     current_offset = result['offset']
                     total_count = result['totalCount']
-                    filters = result['filters'] # Capture returned filters
-                    sortBy = result['sortBy']   # Capture returned sortBy
-                    sortOrder = result['sortOrder'] # Capture returned sortOrder
-                    prompt_for_filters_all_history = False # Set to False after first prompt
+                    filters = result['filters']
+                    sortBy = result['sortBy']
+                    sortOrder = result['sortOrder']
+                    prompt_for_filters_all_history = False
                     
-                    # Check if there are more items to display or if it's not the first page
                     has_more_pages = current_offset + len(result['data']) < total_count
                     can_go_back = current_offset > 0
 
@@ -359,18 +350,16 @@ def main_menu():
 
                         if nav_choice == '1' and can_go_back:
                             clear_terminal()
-                            offset = max(0, offset - current_limit) # Update offset for next iteration
+                            offset = max(0, offset - current_limit)
                             
                             continue
                         elif nav_choice == '2' and has_more_pages:
                             clear_terminal()
-                            offset += current_limit # Update offset for next iteration
+                            offset += current_limit
                             
                             continue
-                    # If no data, or no more pages and it's the first page, break out of the loop
                     break
                 else:
-                    # If result is None (e.g., API error), break out of the loop
                     break
             input("\nPress Enter to continue...")
         elif choice == "5" and current_user_role == "admin":
@@ -383,14 +372,13 @@ def main_menu():
             limit = int(limit_input) if limit_input else current_limit
             offset = int(offset_input) if offset_input else current_offset
 
-            if limit is None: # If user didn't provide limit and it's the first run
-                limit = 5 # Use the actual default
+            if limit is None:
+                limit = 5
 
-            # Initialize filters, sortBy, sortOrder outside the loop
             filters = None
             sortBy = None
             sortOrder = None
-            prompt_for_filters_all_gallery = True # New flag
+            prompt_for_filters_all_gallery = True
 
             while True:
                 result = view_data(view_type="all_gallery", limit=limit, offset=offset, filters=filters, sortBy=sortBy, sortOrder=sortOrder, prompt_for_filters=prompt_for_filters_all_gallery)
@@ -399,12 +387,11 @@ def main_menu():
                     current_limit = result['limit']
                     current_offset = result['offset']
                     total_count = result['totalCount']
-                    filters = result['filters'] # Capture returned filters
-                    sortBy = result['sortBy']   # Capture returned sortBy
-                    sortOrder = result['sortOrder'] # Capture returned sortOrder
-                    prompt_for_filters_all_gallery = False # Set to False after first prompt
+                    filters = result['filters']
+                    sortBy = result['sortBy']
+                    sortOrder = result['sortOrder']
+                    prompt_for_filters_all_gallery = False
                     
-                    # Check if there are more items to display or if it's not the first page
                     has_more_pages = current_offset + len(result['data']) < total_count
                     can_go_back = current_offset > 0
 
@@ -420,17 +407,15 @@ def main_menu():
 
                         if nav_choice == '1' and can_go_back:
                             clear_terminal()
-                            offset = max(0, offset - current_limit) # Update offset for next iteration
+                            offset = max(0, offset - current_limit)
                             continue
                         elif nav_choice == '2' and has_more_pages:
                             clear_terminal()
-                            offset += current_limit # Update offset for next iteration
+                            offset += current_limit
                             
                             continue
-                    # If no data, or no more pages and it's the first page, break out of the loop
                     break
                 else:
-                    # If result is None (e.g., API error), break out of the loop
                     break
             input("\nPress Enter to continue...")
         elif choice == "6":
